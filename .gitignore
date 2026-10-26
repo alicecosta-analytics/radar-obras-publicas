@@ -4,6 +4,7 @@
 # Dados: os brutos são públicos (dados.gov.pt); os intermediários são gerados pelos scripts
 data/raw/
 data/interim/
+data/processed/
 
 # Python e Jupyter
 __pycache__/
