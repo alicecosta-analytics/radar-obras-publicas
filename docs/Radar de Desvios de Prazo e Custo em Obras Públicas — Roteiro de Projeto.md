@@ -112,16 +112,16 @@ Pesquisa quantitativa, descritiva e explicativa, com dados secundários abertos 
 | Fonte | Conteúdo | Formato e atualização | Uso |
 | --- | --- | --- | --- |
 | [IMPIC – Contratos 2012–2026](https://dados.gov.pt/en/datasets/contratos-publicos-portal-base-impic-contratos-de-2012-a-2026/) | Um registo por contrato | Aberto, quinzenal | Base principal |
-| [IMPIC – Modificações contratuais 2012–2026](https://dados.gov.pt/es/datasets/contratos-publicos-portal-base-impic-modificacoes-contratuais-de-2012-a-2026/) | Alterações de preço e prazo | Aberto, semestral | Indicador alternativo de desvio |
+| [IMPIC – Modificações contratuais 2012–2026](https://dados.gov.pt/es/datasets/contratos-publicos-portal-base-impic-modificacoes-contratuais-de-2012-a-2026/) | Alterações de preço e prazo | Aberto, semestral | Prorrogações de prazo, causas dos desvios, limite inferior de custo e checagem do preço efetivo |
 | [Relatórios anuais da contratação pública (Base)](https://www.base.gov.pt/Base4/media/1elfqicv/relat%C3%B3rio-anual-da-contrata%C3%A7%C3%A3o-p%C3%BAblica-2023.pdf) | Totais oficiais por ano | PDF | Validação dos totais |
 | INE – índices de preços (a definir) | Inflação / custos de construção | CSV | Deflação de valores |
 | [ObrasGov – API pública](https://www.gov.br/obrasgov/pt-br/ferramentas-de-gestao-e-transparencia/api-de-dados-abertos-obrasgov-br_novo) | Obras federais, execução física | API REST | Fase 2 |
 
 ### 4.2 Recorte da população
 
-1. Tipo de contrato = empreitadas de obras públicas.
-2. Data de celebração entre 2012 e o último ano com contratos majoritariamente encerrados (definir após a etapa 4.4).
-3. Para os índices de execução: apenas contratos com preço efetivo e data de fecho preenchidos e válidos.
+1. Tipo de contrato exatamente igual a "Empreitadas de obras públicas". Ficam de fora os contratos mistos (empreitada com bens ou serviços, cerca de 1%) e as concessões de obras públicas, que têm outro regime.
+2. Período: **2019 a 2022** para os índices de execução (reporte do fecho estável, perto de 40–47%). 2018 entra só como teste de robustez, por ser ano de transição. De 2023 em diante, os contratos ficam fora dos índices até que a maioria tenha tido tempo de fechar. De 2012 a 2017, o fecho quase não era reportado (5% em 2017); esses anos servem apenas para análises da linha de base (procedimento, concorrência, preço base vs. contratual).
+3. Para os índices de execução: contrato com data de fecho preenchida, preço efetivo maior que zero, fim por cumprimento e prazo contratual maior que zero. Resoluções, revogações e anulações são analisadas à parte, como sinal de falha do projeto.
 
 ### 4.3 Indicadores (adaptação da EVM a contratos encerrados)
 
@@ -137,9 +137,18 @@ Valores abaixo de 1 indicam estouro de custo ou atraso. Para leitura em percenta
 \Delta_{custo} = \frac{\text{efetivo} - \text{contratual}}{\text{contratual}} \qquad \Delta_{prazo} = \frac{\text{realizado} - \text{previsto}}{\text{previsto}}
 ```
 
-Indicador alternativo, para contratos sem fecho registado: soma das modificações de preço ÷ preço contratual, a partir da base de modificações.
+**Revisão após a Fase 0: desenho em intervalo.** Nenhuma medida isolada de prazo é perfeita, então o projeto usa duas, uma de cada lado do valor real:
 
-Limitação assumida: a data de celebração é uma aproximação do início real da obra (o auto de consignação pode ser posterior), o que tende a superestimar o atraso. O nome exato de cada campo será confirmado no dicionário de dados do IMPIC.
+| Dimensão | Limite inferior | Medida direta | Limite superior |
+| --- | --- | --- | --- |
+| Prazo | Prorrogação formal: `modifPrazoExecucao` da última modificação ÷ prazo contratual | — | SPIc: tempo até o fecho no Portal, que inclui um intervalo administrativo |
+| Custo | Preço final da última modificação (`modifContratoPrecoAlterado`) | CPIc com `PrecoTotalEfetivo`, nos contratos fechados | — |
+
+O atraso real de cada grupo de contratos é reportado como um intervalo entre a prorrogação formal e o tempo até o fecho. Para custo, o CPIc dos contratos fechados é a medida principal; o preço final da última modificação serve de limite inferior nos contratos ainda sem fecho, o que amplia a cobertura.
+
+Na base de modificações, cada linha é um fundamento, e não um ato: os registos são deduplicados por contrato, data, preço e prazo, e o estado final de cada contrato é o do último ato. O preço e o prazo alterados são os **novos totais**, e não acréscimos (mediana da razão sobre o contratual: 1,05 para preço e 1,16 para prazo, em 2021).
+
+Limitações assumidas: a data de celebração aproxima o início real da obra (o auto de consignação pode ser posterior), e a data de fecho pode ser bem posterior ao fim da obra. As duas inflam o atraso medido. Uma auditoria manual de cerca de 20 contratos no Portal Base vai verificar a que evento corresponde a data de fecho. Os campos foram confirmados no arquivo de 2021: `precoContratual`, `PrecoTotalEfetivo`, `prazoExecucao` (em dias), `dataCelebracaoContrato`, `dataFechoContrato` e `tipoFimContrato`.
 
 ### 4.4 Etapas da análise
 
@@ -174,15 +183,28 @@ Python (pandas, statsmodels, scipy), SQL, Jupyter para a análise, Streamlit par
 
 ### 4.8 Validade e limitações
 
-- **Viés de seleção:** se só os contratos bem geridos reportam o fecho, os desvios ficam subestimados. A etapa 1 mede esse risco e ele é declarado nas conclusões.
-- **Qualidade do registo:** os dados são declarados pelas próprias entidades, sem auditoria campo a campo.
+- **Viés de seleção:** só cerca de metade das empreitadas tem o encerramento reportado (47% em 2021). Se os contratos bem geridos reportam mais, os desvios ficam subestimados. A etapa 1 mede esse risco e ele é declarado nas conclusões.
+- **Data de fecho administrativa:** a data de fecho parece incluir um intervalo burocrático depois do fim da obra, o que infla o atraso, sobretudo nas obras curtas (ver 4.3 e o Diário da Fase 0).
+- **Preço efetivo possivelmente copiado:** em metade dos contratos encerrados, o preço efetivo é exatamente igual ao contratual. Pode ser obra sem desvio ou repetição automática do valor. O cruzamento com a base de modificações vai testar a consistência.
+- **Qualidade do registo:** os dados são declarados pelas próprias entidades, sem auditoria campo a campo. Erros detectados em 2021: datas de fecho anteriores à celebração, preços efetivos em escala errada (CPIc acima de 1.700) e prazos incompatíveis com as datas.
 - **Causalidade:** a regressão mostra associação, não causa.
 - **Escopo:** o projeto mede o crescimento de custo após a assinatura, não a subestimação na fase de decisão (ver 3.3).
 - **Comparação PT × BR (fase 2):** universos diferentes (todas as entidades vs. obras federais) e moedas diferentes; a comparação será feita sobre índices adimensionais e com ressalvas explícitas.
 
 ## 5. Plano de execução
 
-O projeto avança em cinco fases, cada uma fechada por um critério de passagem (gate), na ordem dos seus estudos. As datas ficam em aberto até você definir o ritmo semanal disponível.
+Com 2 horas por semana, o núcleo do projeto (fases 0 a 4) leva cerca de 70 horas, ou seja, uns 8 a 9 meses, com publicação prevista para o início de julho de 2027. O cronograma inclui duas semanas de folga no fim do ano. Cada fase fecha com um critério de passagem (gate).
+
+| Fase | Horas estimadas | Início | Fim |
+| --- | --- | --- | --- |
+| 0 — Diagnóstico dos dados | 8 h (4 semanas) | 26/10/2026 | 22/11/2026 |
+| 1 — Pipeline e limpeza | 16 h (8 semanas + 2 de folga) | 23/11/2026 | 31/01/2027 |
+| 2 — Banco e consultas SQL | 12 h (6 semanas) | 01/02/2027 | 14/03/2027 |
+| 3 — Estatística e modelos | 20 h (10 semanas) | 15/03/2027 | 23/05/2027 |
+| 4 — Painel e divulgação | 12 h (6 semanas) | 24/05/2027 | 04/07/2027 |
+| 5 — Extensão Brasil (opcional) | 16 h (8 semanas) | 05/07/2027 | 29/08/2027 |
+
+As horas são estimativas iniciais. Se a Fase 0 consumir mais que o previsto, as datas seguintes devem ser revistas no seu gate. A Fase 2 depende de concluir o curso de SQL até fevereiro de 2027; se o curso atrasar, as fases 2 e 3 podem trocar de ordem, porque a análise estatística roda sobre a base tratada em Python.
 
 1. **Fase 0 — Diagnóstico dos dados (agora).**
    - Baixar contratos e modificações do IMPIC; filtrar empreitadas; ler o dicionário de dados.
@@ -245,9 +267,186 @@ O resultado central é um retrato quantitativo, contrato a contrato, de quanto e
 
 **Questões em aberto antes de começar**
 
-- [ ] Qual o ritmo semanal disponível, para converter as fases em datas?
-- [ ] O painel será Streamlit (mais "dados") ou Looker Studio (mais rápido)?
-- [ ] Algum orientador da pós pode revisar o método da Fase 3?
+- [x] Ritmo semanal: 2 h/semana (cronograma na seção 5).
+- [ ] Painel: Streamlit ou Looker Studio. Decidir no gate da Fase 3. Streamlit reaproveita o código Python e conta mais para o portfólio de dados; Looker Studio fica pronto mais rápido se o tempo estiver apertado.
+- [x] Revisão do método: sem orientador. Substituir por (a) uma revisão crítica do notebook da Fase 3 feita comigo, (b) a publicação do método no README antes dos resultados, para receber comentários, e (c) a checagem dos modelos contra o diagnóstico da seção 4.4.
+
+## 7. Diário da Fase 0
+
+Registo dos achados e das decisões de método, na ordem em que aconteceram. Serve de base para o log de exclusões da Fase 1 e para a seção de limitações do README.
+
+### 22/10/2026 — Diagnóstico do arquivo de 2021
+
+**Ambiente:** VS Code, notebook `analise.ipynb`, ambiente virtual `.venv` com pandas e openpyxl, `requirements.txt` gerado. Os 15 arquivos anuais (2012–2026) foram baixados em xlsx, de 16 a 65 MB cada.
+
+**Volume:** 187.416 contratos de todos os tipos em 2021, com 39 colunas. Empreitadas puras: 13.850.
+
+**Completude dos campos-chave nas empreitadas de 2021:**
+
+| Campo | Preenchido | Leitura |
+| --- | --- | --- |
+| `precoContratual`, `prazoExecucao`, `dataCelebracaoContrato` | 100% | Linha de base completa |
+| `PrecoTotalEfetivo` | 100% | Falso: é zero em todos os contratos sem fecho |
+| `dataFechoContrato`, `tipoFimContrato` | 47% | Encerramento reportado |
+| `concorrentes` | 79% | Variável útil para o modelo |
+| `precoBaseProcedimento` | 100% | Permite um indicador extra: preço base vs. contratual |
+| `NUTs` | 1% | Inutilizável; a região sai de `LocalExecucao` |
+
+**Primeiros índices (6.340 contratos válidos):**
+
+- **Custo:** mediana do CPIc = 1,00; 38% dos contratos com estouro; percentil 10 = 0,87. Resultado plausível.
+- **Prazo:** mediana do SPIc = 0,33 e 91% "atrasados". Alto demais para ser só atraso de obra.
+- **Atraso em dias até o fecho, por faixa de prazo contratual (medianas):** até 30 d → 71; 31–90 d → 138; 91–180 d → 305; 181–365 d → 412; mais de 1 ano → 377. O atraso nem é fixo (o que indicaria só burocracia) nem proporcional ao prazo (o que indicaria só atraso de obra): é uma mistura dos dois.
+- **Erros de registo:** 27 contratos com fecho no mesmo dia ou antes da celebração; 79 com CPIc abaixo de 0,5 ou acima de 2; mínimo de −2.935 dias de atraso. Cerca de 1,7% dos válidos.
+
+**Decisões de método**
+
+1. D1 — Usar só as empreitadas puras (ver 4.2).
+2. D2 — Preço efetivo válido apenas com data de fecho e valor maior que zero.
+3. D3 — Excluir dos índices os contratos não terminados por cumprimento; analisar as rescisões à parte.
+4. D4 — Excluir datas impossíveis e CPIc fora do intervalo 0,5–2, registando cada exclusão (a regra de extremos pode ser refinada na Fase 1).
+5. D5 — SPIc reinterpretado como limite superior do atraso; prorrogações da base de modificações como medida principal de prazo (ver 4.3).
+
+**Próximos passos**
+
+- [x] Repetir o diagnóstico em outros anos (feito para 2017–2023, ver abaixo).
+- [x] Baixar a base de modificações contratuais e ver a estrutura (ver abaixo).
+- [ ] Auditoria manual: abrir cerca de 20 contratos no Portal Base e identificar a que evento corresponde a data de fecho.
+- [x] Cruzar contratos com efetivo igual ao contratual com a base de modificações (ver abaixo).
+- [ ] Verificar na legislação se a Portaria 57/2018 ou a revisão do CCP de 2018 (DL 111-B/2017) explica o início do reporte do fecho. Pista: nota de versão do Portal Base de 2020, que cita as Portarias 57/2018 e 284/2019 e a designação das causas de extinção.
+
+### 22/10/2026 — Série 2017–2023
+
+O diagnóstico foi transformado numa função (`diagnostico(ano)`) e aplicado a sete anos. As regras de limpeza D1 a D4 já estão aplicadas.
+
+| Ano | Empreitadas | Com fecho | Válidos | Efetivo = contratual | CPIc p10 | Estouro de custo | Atraso mediano (dias) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 2017 | 16.183 | 5,2% | 712 | 25,6% | 0,92 | 36,7% | 506 |
+| 2018 | 10.343 | 28,3% | 2.814 | 57,9% | 0,96 | 22,1% | 194 |
+| 2019 | 11.522 | 39,1% | 4.385 | 62,6% | 0,96 | 20,2% | 177 |
+| 2020 | 12.734 | 44,8% | 5.592 | 58,9% | 0,92 | 25,2% | 147 |
+| 2021 | 13.850 | 46,6% | 6.234 | 50,9% | 0,88 | 37,4% | 164 |
+| 2022 | 9.886 | 43,4% | 4.174 | 55,8% | 0,89 | 31,6% | 143 |
+| 2023 | 12.602 | 36,9% | 4.533 | 55,7% | 0,90 | 30,0% | 141 |
+
+A mediana do CPIc é 1,00 em todos os anos.
+
+**Achados**
+
+- **O reporte do fecho começa em 2018** e se estabiliza perto de 45% entre 2020 e 2022. Hipótese a verificar: efeito da revisão do CCP em vigor desde janeiro de 2018.
+- **A queda em 2023 é censura:** obras recentes ainda não tiveram tempo de fechar no Portal.
+- **O estouro de custo salta em 2021** (de 20–25% para 37%) e segue em 30–32% em 2022–2023; o percentil 10 do CPIc piora de 0,96 para cerca de 0,88. Hipótese: alta de preços de materiais e energia em 2021–2022, período em que Portugal criou um regime excecional de revisão de preços (DL 36/2022). Explicação alternativa a controlar na Fase 3: mudança no mix de contratos.
+- **A queda do atraso mediano não é melhoria:** nos anos recentes só as obras rápidas fecharam (censura). Reforça a decisão D5.
+
+**Decisão de método**
+
+6. D6 — Janela de análise dos índices: 2019–2022, com 2018 como robustez (ver 4.2).
+
+**Pergunta nova para a Fase 3**
+
+- P7 — O estouro de custo aumentou nos contratos executados durante a alta de preços de 2021–2022, mesmo controlando porte, tipo de obra e procedimento?
+
+### 22/10/2026 — Base de modificações contratuais (2021)
+
+**Estrutura:** os arquivos se chamam `modcontrats` + ano. O de 2021 tem 10.116 linhas e 8 colunas, todas 100% preenchidas: `idcontrato`, `modifContratoFundamento`, `modifContratoTipoAto`, `modifContratoData`, `modifContratoPrecoAlterado`, `modifPrazoExecucao`, `modifDataPublicacao` e `Ano` (ano do contrato, não da modificação). A ligação com os contratos é pelo `idcontrato`.
+
+**Leitura das colunas:**
+
+- O preço e o prazo alterados são os novos totais (mediana da razão sobre o contratual: 1,05 e 1,16).
+- Cada linha é um fundamento; após deduplicar ficam 10.045 atos, de 6.246 contratos.
+- A base inclui modificações pequenas e atos que só mudam o prazo (percentil 10 das razões = 1,00), então a regra de publicitação acima de 10% do Portal não se aplica aos dados abertos.
+- Há razões extremas (até 10.464) que são erros de registo.
+
+**Empreitadas de 2021:** 2.625 das 13.850 (19%) têm pelo menos uma modificação, com cerca de dois atos por contrato.
+
+**Fundamentos mais frequentes (linhas, empreitadas de 2021):**
+
+| Fundamento | Linhas |
+| --- | --- |
+| Trabalhos complementares (art. 370.º CCP) | 2.915 |
+| Revisão ordinária de preços | 545 |
+| Trabalhos complementares e trabalhos a menos | 372 |
+| Trabalhos a menos (art. 379.º) | 335 |
+| Alteração anormal e imprevisível das circunstâncias (art. 312.º, a) | 320 |
+| Interesse público, necessidades novas (art. 312.º, b) | 161 |
+| Revisão extraordinária de preços (DL 36/2022) | 139 |
+| Prorrogação de prazo (art. 13.º do DL 6/2004) | 137 |
+| Interesse público (art. 312.º, c) | 111 |
+| Prorrogação de prazo (art. 4.º do DL 36/2022) | 104 |
+
+Os trabalhos complementares dominam, o que confirma o diagnóstico do Tribunal de Contas sobre a falta de rigor dos projetos de execução. A crise de preços aparece explicitamente: 563 linhas ligadas à alteração anormal das circunstâncias ou ao DL 36/2022, evidência direta para a P7.
+
+**Consistência entre as bases (empreitadas fechadas de 2021):**
+
+|  | Efetivo diferente do contratual | Efetivo igual ao contratual |
+| --- | --- | --- |
+| Sem modificação registada | 40% | 60% |
+| Com modificação registada | 94% | 6% |
+
+- Quando houve modificação, o preço efetivo foi atualizado em 94% dos casos. **O efetivo não é cópia automática**, e o CPIc dos contratos fechados é confiável.
+- Nos 1.145 contratos modificados e fechados, a razão efetivo ÷ preço final da última modificação tem mediana 1,00 e quartis 1,00–1,09. Quando difere, o efetivo tende a ser maior (revisão ordinária e acertos finais pagos sem novo ato).
+- Ponto em aberto: 40% dos contratos fechados sem modificação têm efetivo diferente do contratual. Verificar a direção dessa diferença na Fase 1.
+
+**Decisões de método**
+
+7. D7 — Desenho em intervalo para o prazo: prorrogação formal como limite inferior e SPIc como limite superior (ver 4.3).
+8. D8 — Preço final da última modificação como limite inferior do custo nos contratos sem fecho.
+9. D9 — Base de modificações deduplicada por contrato, data, preço e prazo; estado final = último ato.
+
+**Gate da Fase 0: cumprido em 22/10/2026,** um mês antes do previsto. Há contratos suficientes com dados de execução, as regras de limpeza estão definidas e as medidas foram validadas entre as duas bases. A auditoria manual e a checagem da Portaria 57/2018 seguem em paralelo com a Fase 1.
+
+## 8. Diário da Fase 1
+
+### 26/10/2026 — Estrutura, conversão e script de limpeza
+
+**Estrutura e versionamento:** pastas `data/raw`, `data/interim`, `data/processed`, `src`, `notebooks` e `docs`. Git instalado e configurado; o `.gitignore` deixa de fora o `.venv` e todas as pastas de dados (os brutos são públicos e os demais são gerados pelos scripts). Dois commits: Fase 0 e script de limpeza.
+
+**Conversão (`src/converter.py`):** os 15 arquivos de contratos (2012–2026) e os 5 de modificações (2018–2022) foram convertidos de xlsx para parquet em cerca de 10 minutos, sem perda de linhas. Cada ano passa a carregar em segundos.
+
+**Limpeza e índices (`src/transform.py`):** aplica as decisões D1 a D9 a todos os anos. Nenhum contrato é apagado: cada regra vira uma coluna de flag e os índices só são calculados onde o contrato passa. Saídas: `empreitadas.parquet`, `modificacoes_atos.parquet` e `log_exclusoes.csv`.
+
+**Validação contra a Fase 0:** os contratos válidos para custo batem com o notebook (2021: 6.231 vs. 6.234; 2022: 4.174 vs. 4.174). As diferenças de 1 a 3 contratos vêm da remoção de duplicados entre arquivos anuais e do agrupamento pela data de celebração.
+
+**Janela 2019–2022:** 20.380 contratos com CPIc válido (estouro de custo em 29%); 20.601 com SPIc\_fecho (mediana 0,34); 7.241 empreitadas modificadas.
+
+**Checagem do prazo formal (notebook `02_checagens_fase1`):**
+
+- Entre as empreitadas modificadas: 45% tiveram o prazo prorrogado, 53% mantiveram o prazo (a modificação mexeu só no preço) e 2% reduziram o prazo.
+- Em nenhum contrato o último ato tem prazo menor que um ato anterior. A regra "estado final = último ato" (D9) está correta.
+- Nos 3.279 contratos prorrogados, a prorrogação mediana é de 39% sobre o prazo original (quartis: +19% a +78%; percentil 90: 2,4 vezes o prazo).
+- **O intervalo de atraso é largo:** o limite inferior (prorrogação formal, mediana +39% nos prorrogados) e o limite superior (tempo até o fecho, mediana de cerca de 3 vezes o prazo) estão bem distantes. A auditoria manual da data de fecho ganha importância para estreitar esse intervalo.
+
+**Observação nos anos antigos:** de 2012 a 2017, muitos contratos sem data de fecho têm preço efetivo preenchido (em 2017, 15.344 sem fecho e só 8.052 com efetivo zero). O preenchimento seguia outra lógica antes de 2018. Não altera o recorte, mas entra nas limitações.
+
+**Pendências da Fase 1**
+
+- [x] Conferir a distribuição do SPIc\_formal.
+- [ ] Deflacionar o preço contratual com o índice de custo de construção do INE (só para a variável de porte na Fase 3; ver D10).
+- [x] Validar o número e o valor das empreitadas por ano contra o relatório anual do Base (ver abaixo).
+- [ ] Auditoria manual da data de fecho (cerca de 20 contratos).
+
+### 26/10/2026 — Validação contra os relatórios anuais do Base
+
+Os relatórios de [2021](https://www.base.gov.pt/Base4/media/burjhsro/relatório-anual-da-contratação-pública-2021.pdf), [2022](https://www.base.gov.pt/Base4/media/jv0fv3zp/relatório-anual-da-contratação-pública_2022.pdf) e [2023](https://www.base.gov.pt/Base4/media/1elfqicv/relat%C3%B3rio-anual-da-contrata%C3%A7%C3%A3o-p%C3%BAblica-2023.pdf) não publicam o número absoluto de contratos de obras, só a variação anual; os números oficiais abaixo foram reconstruídos a partir dela. Os relatórios têm inconsistências internas, e a categoria oficial de "obras públicas" inclui serviços relacionados com obras, sendo mais ampla que o filtro D1.
+
+| Ano | Contratos oficiais (reconstr.) | Contratos nossos | Diferença | Valor oficial (M€) | Valor nosso (M€) | Diferença |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2020 | 12.894 | 12.733 | −1,2% | 3.547 | 3.933 | +10,9% |
+| 2021 | 15.215 | 13.844 | −9,0% | 4.435 | 3.742 | −15,6% |
+| 2022 | 10.605 | 9.882 | −6,8% | 2.813 | 2.733 | −2,9% |
+| 2023 | 13.002 | 12.461 | −4,2% | ≈ 4.140 | 4.562 | +10,2% |
+
+- **Contagem: aprovada.** Todos os anos ficam até 10% abaixo dos oficiais, na direção esperada pelo filtro mais estreito.
+- **Valor: diferenças explicadas, sem erros de registo.** Os 10 maiores contratos de cada ano são todos obras reais de grande porte (Metro do Porto, Metropolitano de Lisboa, Infraestruturas de Portugal, APDL), com preço contratual próximo do preço base. Eles concentram 24% do valor em 2020 e 2023; um único contrato (Metro do Porto, 379 M€ em 2023) muda o total anual em cerca de 9%. Diferenças de classificação ou de ano de registo desses megaprojetos explicam as oscilações de ±16%.
+- **Achado lateral:** alguns contratos têm `precoBaseProcedimento` igual a zero (por exemplo, três da REN em 2023). Zero significa "não informado", como no preço efetivo; vale a mesma regra se o preço base for usado.
+
+**Decisões de método**
+
+10. D10 — Os índices (CPIc, SPIc) não são deflacionados: a inflação durante a execução faz parte do desvio medido (P7). A deflação aplica-se só ao preço contratual usado como variável de porte.
+11. D11 — Resultados agregados usam medianas e percentagens de contratos, não somas em euros, que são dominadas por poucos megaprojetos. Os megaprojetos (por exemplo, acima de 50 M€) são analisados também à parte, na linha de Flyvbjerg.
+12. D12 — `precoBaseProcedimento` igual a zero é tratado como ausente.
+
+**Gate da Fase 1: cumprido em 26/10/2026,** com a ressalva do valor documentada acima. Ficam para o início da Fase 3: a deflação (D10) e a auditoria manual da data de fecho.
 
 ## Referências
 
