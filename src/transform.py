@@ -26,6 +26,7 @@ TIPO_EMPREITADA = "Empreitadas de obras públicas"   # D1
 LIMITES_CPI = (0.5, 2.0)                            # D4
 LIMITES_RAZAO_PRECO_MOD = (0.5, 2.0)                # mesmo critério para as modificações
 LIMITES_RAZAO_PRAZO_MOD = (0.5, 5.0)                # prorrogações longas são plausíveis
+PRAZO_MAXIMO_DIAS = 3650                            # D13: acima de 10 anos = erro de registo
 
 COLUNAS_CONTRATO = [
     "idcontrato", "Ano", "tipoContrato", "tipoprocedimento", "objectoContrato",
@@ -93,7 +94,7 @@ def aplicar_regras(e: pd.DataFrame) -> pd.DataFrame:
     e["r_efetivo_positivo"] = e["PrecoTotalEfetivo"].fillna(0) > 0                      # D2
     e["r_cumprido"] = (e["tipoFimContrato"].astype("string")
                        .str.startswith("O cumprimento").fillna(False).astype(bool))   # D3
-    e["r_prazo_valido"] = e["prazoExecucao"].fillna(0) > 0
+    e["r_prazo_valido"] = e["prazoExecucao"].between(1, PRAZO_MAXIMO_DIAS)             # D13
     e["r_datas_validas"] = dias.fillna(0) > 0                                           # D4
 
     base_ok = e[["r_tem_fecho", "r_efetivo_positivo", "r_cumprido",
