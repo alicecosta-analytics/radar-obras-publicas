@@ -448,6 +448,120 @@ Os relatórios de [2021](https://www.base.gov.pt/Base4/media/burjhsro/relatório
 
 **Gate da Fase 1: cumprido em 26/10/2026,** com a ressalva do valor documentada acima. Ficam para o início da Fase 3: a deflação (D10) e a auditoria manual da data de fecho.
 
+## 9. Diário da Fase 2
+
+### 26/10/2026 — Banco SQLite e primeiras consultas
+
+**Escolha do banco:** SQLite. O banco é um único arquivo (`data/obras.db`), sem servidor nem permissão de administrador; o SQL usado é padrão e migra para PostgreSQL se necessário. O arquivo é gerado pelo script e fica fora do Git (`data/*.db`).
+
+**Modelo (esquema em estrela, `sql/schema.sql`):**
+
+| Tabela | Tipo | Linhas | Conteúdo |
+| --- | --- | --- | --- |
+| `fato_contrato` | Fato | 185.100 | Uma linha por empreitada: preços, prazos, flags de validade, os quatro índices e o resumo das modificações |
+| `fato_modificacao` | Fato | 33.712 | Uma linha por ato de modificação, com os fundamentos e as causas marcadas |
+| `dim_entidade` | Dimensão | 6.353 | Entidade adjudicante, com o NIF como chave e a grafia mais frequente do nome |
+| `dim_procedimento` | Dimensão | 15 | Tipo de procedimento de contratação |
+| `dim_local` | Dimensão | 977 | País, distrito e concelho do primeiro local de execução |
+| `dim_cpv` | Dimensão | 37 | Tipo de obra pelos 3 primeiros dígitos do CPV |
+
+**Carga (`src/load.py`):** recria o banco a partir de `data/processed/` e verifica a integridade. Na primeira carga, nenhum contrato ficou sem entidade ou procedimento, e nenhuma chave estrangeira ficou quebrada. As regras D2 e D12 (preço efetivo e preço base iguais a zero tratados como ausentes) são aplicadas na carga.
+
+**Consultas analíticas (`sql/queries/`):**
+
+- `01_validacao_carga.sql` — empreitadas, fecho e contratos válidos por ano; reproduz o log de exclusões.
+- `02_estouro_custo_por_ano.sql` — **P2**: percentagem de empreitadas com estouro de custo, por ano. Resultado: 22,1% (2018), 20,2% (2019), 25,2% (2020), 37,4% (2021), 31,6% (2022) e 30,1% (2023), iguais à série da Fase 0. A média do CPIc cai de 1,005 (2018) para 0,977 (2021).
+
+**Aprendizagem de SQL:** as consultas analíticas passam a ser escritas pela autora, em lições progressivas no notebook `03_sql`, cada uma ligada a uma pergunta de pesquisa.
+
+| Lição | Conceitos | Resultado no projeto |
+| --- | --- | --- |
+| 1 | `SELECT`, `WHERE`, `AND`, `ORDER BY`, `LIMIT`, apelidos, NULL e `IS NOT NULL`, `PRAGMA table_info` | Maiores contratos e maiores estouros de 2021 |
+| 2 | Expressões, `ROUND`, ordem das operações, divisão inteira, `COUNT`/`SUM`/`AVG`, `GROUP BY`, contagem de condições com `SUM` | Consulta P2 |
+| 3 (próxima) | `JOIN` com as dimensões, `HAVING` | P3: estouro por tipo de procedimento |
+
+**Achados laterais das lições:**
+
+- Há obras com estouro de custo próximo de 90% (contrato 7694469: 8,5 M€ contratados, cerca de 16 M€ pagos) e uma obra de 32 M€ da Infraestruturas de Portugal (8426196) que terminou cerca de 66% acima do contratado.
+- O contrato 9212096 tem preço contratual de 1.644 €, valor suspeito para uma empreitada; verificar na auditoria manual.
+- A média do CPIc (0,977 em 2021) fica abaixo da mediana (1,00): a distribuição tem cauda de estouros, como previsto em H2.
+
+**Pendências da Fase 2**
+
+- [x] Lição 3: `JOIN` e `HAVING`, consulta P3 (estouro por tipo de procedimento).
+- [x] Consultas para P4 (porte e prazo), P5 (custo × prazo) e P7 (causas das modificações por ano).
+- [x] Cálculo da mediana em SQL (D11).
+- [ ] Exercícios das Lições 4 a 6 (adiados para o fim do projeto; as consultas foram escritas prontas, com os conceitos explicados nos cabeçalhos).
+- [x] Rodar de novo o `transform.py` e o `load.py` com a regra D13 e refazer a consulta 07.
+
+### 29/10/2026 — Lição 3 e consulta P3
+
+**Consulta `03_estouro_por_procedimento.sql` (P3)**, empreitadas de 2019–2022, só procedimentos com pelo menos 100 contratos com CPIc válido (escolha de método: grupos menores não dão percentagens confiáveis). A soma dos contratos por procedimento confere com o total da janela (47.980).
+
+| Procedimento | Contratos com CPIc | Estouro de custo |
+| --- | --- | --- |
+| Concurso público | 5.525 | 51,4% |
+| Ao abrigo de acordo-quadro (art. 258.º) | 933 | 36,2% |
+| Consulta prévia | 8.655 | 22,2% |
+| Ajuste direto (regime geral) | 5.157 | 15,0% |
+
+### 30/10/2026 — Consultas P4, P5, P7 e medianas
+
+Os exercícios das Lições 4 a 6 foram adiados por falta de tempo; as consultas 04 a 08 foram escritas prontas e testadas, com os conceitos (`CASE WHEN`, `GROUP BY` com duas colunas, `IN`, `COALESCE`, CTEs e funções de janela) explicados nos cabeçalhos dos arquivos.
+
+**04 — Estouro por porte (P4), 2019–2022.** As faixas somam 47.980 contratos e 20.380 com CPIc, os totais da janela.
+
+| Faixa de preço contratual | Contratos com CPIc | Estouro de custo |
+| --- | --- | --- |
+| até 150 mil € | 16.201 | 21,8% |
+| 150 mil a 1 milhão € | 3.532 | 54,5% |
+| 1 a 5 milhões € | 584 | 73,3% |
+| acima de 5 milhões € | 63 | 82,5% |
+
+O estouro cresce de forma contínua com o porte: H4 confirmada.
+
+**05 — Procedimento × porte.** Dentro da mesma faixa, o concurso público continua a estourar mais:
+
+| Faixa | Ajuste direto | Consulta prévia | Concurso público |
+| --- | --- | --- | --- |
+| até 150 mil € | 14,2% | 22,0% | 36,3% |
+| 150 mil a 1 milhão € | 40,4% | 32,3% | 56,0% |
+
+Parte da diferença entre procedimentos vem do porte, mas o concurso estoura 15 a 20 pontos percentuais a mais mesmo entre obras da mesma faixa. Compatível com a explicação da competição de preço ("maldição do vencedor"). Ressalva: as faixas são largas; a regressão da Fase 3, com o preço contínuo, deve confirmar.
+
+**06 — Causas das modificações por ano (P7).**
+
+| Ano | Modificadas | Trabalhos complementares | Crise de preços | Prorrogação |
+| --- | --- | --- | --- | --- |
+| 2018 | 5,5% | 53,5% | 28,0% | 1,2% |
+| 2019 | 7,8% | 70,0% | 18,3% | 1,7% |
+| 2020 | 13,1% | 72,9% | 16,1% | 3,2% |
+| 2021 | 19,0% | 72,5% | 17,9% | 6,2% |
+| 2022 | 20,7% | 72,2% | 17,5% | 10,3% |
+
+As três últimas colunas são percentagens das empreitadas modificadas; um contrato pode ter várias causas.
+
+- A subida da parcela de modificadas pode refletir também a melhoria do registo das modificações ao longo dos anos.
+- Os trabalhos complementares dominam (cerca de 72% desde 2019): sinal de projetos de execução pouco rigorosos.
+- A causa "crise de preços" pesa mais nos contratos de 2018: contratos de preço fixo assinados antes da alta e ainda em execução em 2021–2022. O marcador inclui o fundamento geral de alteração anormal das circunstâncias, que pode ter outros usos (por exemplo, a pandemia).
+
+**07 — Custo × prazo (P5), depois da regra D13.** Empreitadas de 2019–2022 com CPIc válido:
+
+| Grupo | Contratos | Com prorrogação formal | Atraso médio até o fecho | Fechados após o prazo |
+| --- | --- | --- | --- | --- |
+| Estourou o custo | 5.940 | 18,8% | 464 dias | 98,2% |
+| Não estourou o custo | 14.439 | 2,1% | 207 dias | 87,7% |
+
+Custo e prazo estouram juntos: H5 confirmada. Ressalva: as obras com estouro de custo são em média maiores e mais longas (consulta 04), e obras longas acumulam mais dias de atraso; a correlação de Spearman entre os índices, na Fase 3, deve separar o efeito do porte. Na primeira versão, a média do atraso no grupo com estouro saiu −3.063 dias por causa de um único erro de registo (ver diagnóstico abaixo).
+
+**Diagnóstico:** um único contrato (6299194, 2020) tem prazo registado de 20.950.589 dias. Sozinho, distorceu a média de 5.941 contratos. Os outros prazos longos (de 3 a 10 anos) são plausíveis.
+
+**08 — Medianas por ano (D11).** A mediana do CPIc é 1,00 em todos os anos, porque cerca de metade das obras termina exatamente no preço contratado; para custo, as medidas úteis são a percentagem de estouro e o tamanho dos estouros. A mediana do SPIc até o fecho fica entre 0,29 e 0,37 (o contrato típico é fechado após cerca de três vezes o prazo); a melhoria ao longo dos anos é efeito de censura.
+
+**Decisão de método**
+
+13. D13 — Prazo contratual acima de 3.650 dias (10 anos) é tratado como erro de registo e sai dos índices. Aplicada no `transform.py`.
+
 ## Referências
 
 Formato ABNT. Itens marcados "(a conferir)" precisam de verificação dos dados completos antes da versão final.
