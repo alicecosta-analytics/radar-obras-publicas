@@ -1,0 +1,37 @@
+﻿;OR;IC 2,5%;IC 97,5%;p-valor
+Intercept;0,001;0,0;0,002;0,0
+procedimento: Concurso público;1,668;1,283;2,167;0,0
+procedimento: Consulta prévia;0,97;0,831;1,133;0,704
+procedimento: Outros;3,054;1,145;8,143;0,026
+cpv: 450;0,634;0,479;0,838;0,001
+cpv: 451;0,886;0,697;1,126;0,322
+cpv: 453;1,154;0,873;1,526;0,314
+cpv: 454;0,805;0,619;1,046;0,105
+cpv: outros;0,174;0,076;0,398;0,0
+distrito: Aveiro;1,079;0,583;1,999;0,808
+distrito: Beja;2,363;1,12;4,984;0,024
+distrito: Braga;0,64;0,389;1,054;0,08
+distrito: Braganca;0,646;0,318;1,314;0,228
+distrito: Coimbra;1,56;0,809;3,006;0,184
+distrito: Faro;1,165;0,578;2,348;0,669
+distrito: Guarda;1,139;0,489;2,65;0,763
+distrito: Leiria;0,894;0,358;2,232;0,81
+distrito: Portalegre;0,696;0,336;1,44;0,328
+distrito: Porto;1,268;0,713;2,253;0,419
+distrito: Região Autónoma da Madeira;0,429;0,16;1,149;0,092
+distrito: Região Autónoma dos Açores;0,77;0,443;1,338;0,354
+distrito: Santarém;1,886;1,054;3,377;0,033
+distrito: Setúbal;1,094;0,615;1,943;0,76
+distrito: Viana do Castelo;1,008;0,42;2,418;0,986
+distrito: Vila Real;1,146;0,598;2,198;0,681
+distrito: Viseu;1,374;0,755;2,5;0,298
+distrito: outros;1,305;0,821;2,074;0,261
+ano: 2020;1,332;1,125;1,577;0,001
+ano: 2021;2,757;2,165;3,513;0,0
+ano: 2022;2,193;1,726;2,786;0,0
+concorrencia: 2 a 3;0,901;0,774;1,048;0,177
+concorrencia: 4 a 5;0,955;0,781;1,167;0,652
+concorrencia: 6 ou mais;0,853;0,682;1,067;0,165
+concorrencia: não informado;0,766;0,615;0,953;0,017
+log_preco;2,729;2,165;3,439;0,0
+log_prazo;1,645;1,302;2,079;0,0

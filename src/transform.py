@@ -67,9 +67,16 @@ def preparar_empreitadas(contratos: pd.DataFrame) -> pd.DataFrame:
     colunas = [c for c in COLUNAS_CONTRATO if c in contratos.columns] + ["ano_arquivo"]
     e = contratos.loc[contratos["tipoContrato"] == TIPO_EMPREITADA, colunas].copy()   # D1
 
-    for col in ["precoBaseProcedimento", "precoContratual", "PrecoTotalEfetivo",
-                "prazoExecucao", "concorrentes"]:
+    for col in ["precoBaseProcedimento", "precoContratual", "PrecoTotalEfetivo", "prazoExecucao"]:
         e[col] = numero(e[col])
+
+    # A coluna concorrentes é a lista das empresas ("NIF-nome"), uma por linha:
+    # o número de concorrentes é o número de linhas não vazias.
+    lista = e["concorrentes"].astype("string").str.strip()
+    e["concorrentes"] = (lista.str.split("\n")
+                              .apply(lambda itens: sum(1 for i in itens if i.strip()) if isinstance(itens, list) else pd.NA)
+                              .astype("Int64"))
+    e.loc[e["concorrentes"] == 0, "concorrentes"] = pd.NA
     for col in ["dataCelebracaoContrato", "dataFechoContrato"]:
         e[col] = data(e[col])
 
