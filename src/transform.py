@@ -21,6 +21,7 @@ import pandas as pd
 RAIZ = Path(__file__).resolve().parent.parent
 INTERIM = RAIZ / "data" / "interim"
 PROCESSED = RAIZ / "data" / "processed"
+INDICE_INE = RAIZ / "data" / "raw" / "ine_icchn.xls"   # D10: índice de custo de construção, base 2021
 
 TIPO_EMPREITADA = "Empreitadas de obras públicas"   # D1
 LIMITES_CPI = (0.5, 2.0)                            # D4
@@ -116,6 +117,39 @@ def aplicar_regras(e: pd.DataFrame) -> pd.DataFrame:
     return e
 
 
+# ---------------------------------------------------------------- deflação (D10)
+
+def ler_indice_ine() -> pd.Series:
+    """Índice mensal de custo de construção de habitação nova (INE, base 2021 = 100).
+    O arquivo do INE tem cabeçalho e notas; ficam só as linhas do fator 'Total'."""
+    d = pd.read_excel(INDICE_INE, header=None, usecols=[0, 1, 2], engine="calamine",
+                      names=["periodo", "fator", "indice"])
+    d = d[d["fator"].eq("Total")]
+    mes = pd.to_datetime(d["periodo"], format="%B %Y").dt.to_period("M")
+    return pd.Series(pd.to_numeric(d["indice"]).values, index=mes).sort_index()
+
+
+def deflacionar(e: pd.DataFrame) -> pd.DataFrame:
+    """Preço contratual a preços de 2021, pelo índice do mês de celebração.
+    Usado só como variável de porte; os índices CPIc e SPIc não são deflacionados (D10).
+    Sem mês de celebração, ou mês além do último publicado: usa a média do ano ou o último índice."""
+    if not INDICE_INE.exists():
+        print(f"  Aviso: {INDICE_INE.name} não encontrado; preço deflacionado não calculado.")
+        e["preco_contratual_2021"] = pd.NA
+        return e
+    indice = ler_indice_ine()
+    media_ano = indice.groupby(indice.index.year).mean()
+
+    mes = e["dataCelebracaoContrato"].dt.to_period("M")
+    fator = mes.map(indice)
+    fator = fator.fillna(e["ano_celebracao"].map(media_ano))     # mês sem índice: média do ano
+    fator = fator.fillna(indice.iloc[-1])                         # ano sem índice: último publicado
+    e["indice_ine"] = fator.astype(float)
+    e["preco_contratual_2021"] = e["precoContratual"] * 100 / e["indice_ine"]
+    print(f"  Preço deflacionado com o índice do INE ({indice.index.min()} a {indice.index.max()})")
+    return e
+
+
 # ---------------------------------------------------------------- modificações
 
 def preparar_modificacoes(mod: pd.DataFrame) -> pd.DataFrame:
@@ -205,6 +239,7 @@ def main() -> None:
     print("Lendo contratos...")
     e = preparar_empreitadas(ler_anos("contratos"))
     e = aplicar_regras(e)
+    e = deflacionar(e)
     print(f"  {len(e):,} empreitadas")
 
     print("Lendo modificações...")
