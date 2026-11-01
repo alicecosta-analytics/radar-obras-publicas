@@ -34,12 +34,14 @@ Empreitadas de obras públicas celebradas de 2019 a 2022, com custo final regist
 
 | Competência | Onde |
 | --- | --- |
-| Controlo de projetos: Gestão do Valor Agregado (EVM) e Earned Schedule adaptados a contratos encerrados | [Roteiro, seções 3 e 4](docs/) |
-| Diagnóstico de qualidade de dados e decisões de limpeza documentadas (D1 a D13) | [`notebooks/01_completude.ipynb`](notebooks/01_completude.ipynb), [`src/transform.py`](src/transform.py) |
-| Pipeline reprodutível em Python (xlsx → parquet → dados processados) | [`src/`](src/) |
-| Modelagem dimensional e SQL analítico (esquema em estrela, JOIN, CTEs, funções de janela) | [`sql/`](sql/) |
-| Estatística: intervalos de confiança, qui-quadrado, Mann-Whitney, Spearman, regressão logística com erros agrupados, efeitos marginais, robustez e viés de seleção | [`notebooks/04_descritiva.ipynb`](notebooks/04_descritiva.ipynb) a [`06_robustez.ipynb`](notebooks/06_robustez.ipynb) |
+| Inferência estatística: intervalos de confiança (Wilson), qui-quadrado e V de Cramér, Mann-Whitney, correlação de Spearman | [`notebooks/04_descritiva.ipynb`](notebooks/04_descritiva.ipynb), [`05_testes_regressao.ipynb`](notebooks/05_testes_regressao.ipynb) |
+| Modelagem: regressão logística com erros-padrão agrupados, efeitos marginais médios, modelos em camadas para isolar fatores de confusão | [`notebooks/05_testes_regressao.ipynb`](notebooks/05_testes_regressao.ipynb) |
+| Validação: testes de robustez, triangulação entre medidas independentes, modelo de viés de seleção | [`notebooks/06_robustez.ipynb`](notebooks/06_robustez.ipynb) |
+| Qualidade de dados: diagnóstico de completude e de conteúdo, censura, regras de limpeza documentadas (D1 a D13) | [`notebooks/01_completude.ipynb`](notebooks/01_completude.ipynb), [`src/transform.py`](src/transform.py) |
+| Engenharia de dados: pipeline reprodutível em Python (xlsx → parquet → dados processados), deflação de séries | [`src/`](src/) |
+| SQL analítico e modelagem dimensional (esquema em estrela, JOIN, CTEs, funções de janela) | [`sql/`](sql/) |
 | Visualização e painel interativo publicado | [`app/app.py`](app/app.py), [painel](https://radar-obras-publicas.streamlit.app) |
+| Conhecimento de domínio: índices de desempenho de projetos (Gestão do Valor Agregado) adaptados a contratos públicos | [Roteiro, seções 3 e 4](docs/) |
 
 ## Dados
 
@@ -118,7 +120,7 @@ Python (pandas, statsmodels, scipy, matplotlib, Altair), SQLite, Jupyter, Stream
 
 ## Autora
 
-**Alice Costa** — análise de dados e gestão de projetos (PMO).
+**Alice Costa** — cientista de dados, com ênfase em estatística.
 [LinkedIn](https://www.linkedin.com/in/alice-c-costa/) · [GitHub](https://github.com/alicecosta-analytics)
 
 Os dados do Portal Base são de domínio público (IMPIC) e o índice do INE está sob licença CC BY 4.0.
