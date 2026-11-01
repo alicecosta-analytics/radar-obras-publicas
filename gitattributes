@@ -1,0 +1,3 @@
+# Os notebooks guardam as saídas (tabelas, gráficos) e inflam a contagem de linguagens do GitHub.
+# Marcá-los como documentação faz a barra de linguagens mostrar o código do projeto (Python).
+*.ipynb linguist-documentation
