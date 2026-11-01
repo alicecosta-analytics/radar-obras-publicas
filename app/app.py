@@ -15,7 +15,7 @@ import pandas as pd
 import streamlit as st
 
 DADOS = Path(__file__).parent / "dados"
-REPO = "https://github.com/alicecristine892-debug/radar-obras-publicas"
+REPO = "https://github.com/alicecosta-analytics/radar-obras-publicas"
 LINK_BASE = "https://www.base.gov.pt/Base4/pt/detalhe/?type=contratos&id={}"
 
 # Paleta de referência validada (azul, laranja, verde-água) e tons neutros
