@@ -52,14 +52,16 @@ Medir e explicar os desvios de custo e prazo nas empreitadas de obras públicas 
 
 ### 2.3 Perguntas de pesquisa e hipóteses
 
-| # | Pergunta | Hipótese de trabalho |
-| --- | --- | --- |
-| P1 | Que parcela dos contratos tem dados de execução preenchidos? | H1: a completude é baixa e não aleatória (varia por entidade e porte), o que exige tratar viés de seleção. |
-| P2 | Qual é a distribuição dos desvios de custo e prazo? | H2: as distribuições são assimétricas à direita; a mediana do desvio é positiva e há cauda longa. |
-| P3 | O desvio difere por tipo de procedimento? | H3: ajustes diretos e consultas prévias têm desvios diferentes dos concursos públicos. |
-| P4 | O porte do contrato prediz o desvio? | H4: contratos maiores e mais longos têm maior probabilidade de estouro de prazo. |
-| P5 | Custo e prazo estouram juntos? | H5: os desvios de custo e de prazo são positivamente correlacionados. |
-| P6 | (Fase 2) Os padrões se repetem no Brasil? | H6: a direção dos efeitos se mantém; a magnitude difere. |
+| # | Pergunta | Hipótese de trabalho | Resultado (Fase 3) |
+| --- | --- | --- | --- |
+| P1 | Que parcela dos contratos tem dados de execução preenchidos? | H1: a completude é baixa e não aleatória (varia por entidade e porte), o que exige tratar viés de seleção. | **Confirmada em parte.** Só cerca de 43% a 47% têm o fecho registado, e quase nenhum antes de 2018. A seleção é moderada: varia com o ano e um pouco com o procedimento, mas não com o porte. |
+| P2 | Qual é a distribuição dos desvios de custo e prazo? | H2: as distribuições são assimétricas à direita; a mediana do desvio é positiva e há cauda longa. | **Confirmada em parte.** Assimétrica à direita, mas a mediana do desvio de custo é zero: 57% das obras terminam no preço. O estouro atinge 20% a 37% dos contratos, conforme o ano. |
+| P3 | O desvio difere por tipo de procedimento? | H3: ajustes diretos e consultas prévias têm desvios diferentes dos concursos públicos. | **Confirmada para o concurso público:** +8,5 p.p. de probabilidade de estouro, controlando o porte. A diferença da consulta prévia desaparece ao controlar o porte. |
+| P4 | O porte do contrato prediz o desvio? | H4: contratos maiores e mais longos têm maior probabilidade de estouro de prazo. | **Confirmada, para o custo:** +16,7 p.p. a cada preço 10 vezes maior, o fator mais forte. Para o prazo, não testável com precisão (o atraso real fica entre 9% e 90%). |
+| P5 | Custo e prazo estouram juntos? | H5: os desvios de custo e de prazo são positivamente correlacionados. | **Confirmada, com associação fraca** (rho de Spearman de 0,13 a 0,27). |
+| P6 | (Fase 2) Os padrões se repetem no Brasil? | H6: a direção dos efeitos se mantém; a magnitude difere. | Não testada (fase opcional). |
+| P7 | O estouro aumentou durante a alta de preços de 2021–2022? | Pergunta surgida na Fase 0. | **Confirmada:** +16,9 p.p. em 2021 e +13,1 p.p. em 2022 face a 2019, com todos os controles; robusto em todas as variações. |
+| — | A concorrência explica o efeito do concurso ("maldição do vencedor")? | Hipótese surgida na Fase 2. | **Não apoiada:** o número de concorrentes não tem efeito significativo. |
 
 As hipóteses são pontos de partida para o teste estatístico, não conclusões antecipadas.
 
@@ -561,6 +563,133 @@ Custo e prazo estouram juntos: H5 confirmada. Ressalva: as obras com estouro de 
 **Decisão de método**
 
 13. D13 — Prazo contratual acima de 3.650 dias (10 anos) é tratado como erro de registo e sai dos índices. Aplicada no `transform.py`.
+
+## 10. Diário da Fase 3
+
+### 01/11/2026 — Deflação, descritiva, testes e regressão
+
+**Deflação (D10, `transform.py`).** Índice de custo de construção de habitação nova do INE, mensal, base 2021 = 100, de 2000 a agosto de 2026 (arquivo `data/raw/ine_icchn.xls`). Cada contrato é deflacionado pelo índice do mês de celebração (coluna `preco_contratual_2021`). Médias anuais: 2019 = 92,0; 2020 = 93,9; 2021 = 100; 2022 = 112,2 (+12,2%). A série mostra a alta de custos de 2021–2022.
+
+**Lição aprendida (dados):** a coluna `concorrentes` não é um número, mas a lista das empresas concorrentes ("NIF-nome", uma por linha). A conversão direta para número a esvaziava; o erro só apareceu na regressão. O número de concorrentes passou a ser o número de linhas. Completude alta não garante conteúdo correto: as colunas usadas como variáveis devem ter o conteúdo inspecionado, e não só a percentagem de preenchimento.
+
+**Estatística descritiva (notebook `04_descritiva`, gráficos em `reports/figures/`).**
+
+- 57% das empreitadas de 2019–2022 terminam exatamente no preço contratado; os estouros são em geral moderados (0% a 20%).
+- O salto do estouro de 25,2% (2020) para 37,4% (2021) é estatisticamente claro: os intervalos de confiança de 95% não se sobrepõem. O estouro fica em 30% a 32% em 2022 e 2023.
+- A prorrogação formal de prazo atinge só 3% (2018) a 9% (2022) dos contratos; o fecho após o prazo, cerca de 90%. **A percentagem real de obras atrasadas fica entre 9% e 90%: os dados abertos não permitem estimá-la com precisão.** A auditoria manual passa a ser decisiva para o prazo.
+
+**Testes de comparação (notebook `05_testes_regressao`), 2019–2022, 20.379 contratos.**
+
+| Teste | Resultado | Leitura |
+| --- | --- | --- |
+| Qui-quadrado, estouro × procedimento | p < 0,001; V de Cramér = 0,325 | Efeito médio |
+| Qui-quadrado, estouro × faixa de porte | p < 0,001; V de Cramér = 0,326 | Efeito médio, igual ao do procedimento |
+| Mann-Whitney, tamanho do estouro, concurso × ajuste direto | Medianas 8,7% × 3,8%; probabilidade de superioridade 0,69 | Nos concursos, o estouro é mais frequente e maior |
+| Spearman, desvio de custo × (tempo até o fecho ÷ prazo) | rho = 0,13 | Associação positiva, fraca |
+| Spearman, desvio de custo × teve prorrogação formal | rho = 0,27 | Associação positiva, fraca a moderada |
+
+**Regressão logística da probabilidade de estouro.** Erros-padrão agrupados por entidade adjudicante (1.299 entidades). Modelo completo: pseudo-R² = 0,163; AUC = 0,768; VIF de porte e prazo = 1,96.
+
+| Modelo | Concurso público (OR) | Consulta prévia (OR) |
+| --- | --- | --- |
+| 1. Só procedimento | 5,98 (4,85–7,37) | 1,61 (1,41–1,85) |
+| 2. + porte e prazo | 1,79 (1,40–2,30) | 1,05 (0,91–1,21) |
+| 3. + todos os controles | 1,67 (1,28–2,17) | 0,97 (0,83–1,13) |
+
+Referência: ajuste direto. Entre parênteses, o IC de 95%.
+
+Efeitos marginais médios no modelo completo (pontos percentuais na probabilidade de estouro):
+
+| Variável | Efeito | IC de 95% |
+| --- | --- | --- |
+| Preço contratual 10 vezes maior | +16,7 p.p. | 13,0 a 20,4 |
+| Contrato celebrado em 2021 (vs. 2019) | +16,9 p.p. | 12,8 a 20,9 |
+| Contrato celebrado em 2022 (vs. 2019) | +13,1 p.p. | 9,3 a 16,9 |
+| Concurso público (vs. ajuste direto) | +8,5 p.p. | 4,1 a 12,9 |
+| Prazo contratual 10 vezes maior | +8,3 p.p. | 4,4 a 12,2 |
+| Contrato celebrado em 2020 (vs. 2019) | +4,8 p.p. | 2,0 a 7,5 |
+| 6 ou mais concorrentes (vs. 1) | −2,6 p.p. | −6,4 a 1,1 (não significativo) |
+
+**Respostas às perguntas de pesquisa**
+
+- **Pergunta central (P3 × P4):** o porte e o prazo explicam a maior parte da diferença do concurso público (a razão de chances cai de 6,0 para 1,7), mas resta um efeito próprio do procedimento: +8,5 pontos percentuais na probabilidade de estouro, mantendo o resto constante. A diferença da consulta prévia em relação ao ajuste direto desaparece por completo ao controlar o porte.
+- **P4:** o porte é o fator mais forte do modelo, junto com o ano de celebração. H4 confirmada.
+- **P5:** custo e prazo estão positivamente associados, mas de forma fraca. H5 confirmada com ressalva.
+- **P7:** controlando porte, procedimento, tipo de obra, região e concorrência, os contratos de 2021 têm 16,9 pontos percentuais a mais de probabilidade de estouro que os de 2019. O efeito da crise de preços é robusto.
+- **Concorrência:** o número de concorrentes não tem efeito significativo. A explicação da "maldição do vencedor" medida pela intensidade da concorrência não é apoiada; o efeito próprio do concurso deve vir de outras características do procedimento ou das obras.
+
+**Cuidados de leitura:** com 17 distritos, alguns aparecem como significativos só por acaso (Beja, Santarém); não devem ser interpretados sem confirmação. O grupo "outros" de procedimentos é pequeno e tem intervalo largo. A regressão mostra associação, não causalidade.
+
+**Pendências da Fase 3**
+
+- [x] 3.6 Robustez: incluir 2018; usar o limite inferior de custo (CPIc\_mod); testar o viés de seleção (quais contratos têm o fecho reportado).
+- [ ] Auditoria manual da data de fecho (cerca de 20 contratos), agora decisiva para o prazo.
+- [x] Atualizar as hipóteses da seção 2.3 com os resultados.
+
+### 01/11/2026 — Robustez e viés de seleção (notebook `06_robustez`)
+
+O modelo completo foi refeito em cinco variações, mudando uma escolha de método de cada vez. Efeitos marginais médios, em pontos percentuais, com IC de 95%:
+
+| Variação | Contratos | % com estouro | Concurso público | Ano 2021 |
+| --- | --- | --- | --- | --- |
+| Principal | 20.379 | 29,1% | +8,5 (4,1 a 12,9) | +16,9 (12,8 a 20,9) |
+| Com 2018 | 23.192 | 28,3% | +9,7 (5,4 a 13,9) | +16,7 (12,8 a 20,6) |
+| Estouro acima de 5% | 20.379 | 17,3% | +12,1 (8,0 a 16,2) | +15,7 (12,4 a 19,0) |
+| Sem megaprojetos (> 5 M€) | 20.316 | 29,0% | +8,6 (4,2 a 12,9) | +16,9 (12,8 a 20,9) |
+| Base de modificações, todos os contratos | 47.818 | 11,3% | +5,9 (3,7 a 8,1) | +8,4 (6,9 a 9,9) |
+
+- Os dois efeitos ficam positivos e significativos em todas as variações.
+- Com o estouro acima de 5%, o efeito do concurso aumenta: pesa mais nos estouros relevantes.
+- A base de modificações usa outra fonte e outra amostra (inclui contratos sem fecho). Os efeitos são menores em pontos percentuais, mas semelhantes ou maiores em termos relativos (+5,9 p.p. sobre uma base de 11,3%). Duas medidas com defeitos diferentes chegam à mesma conclusão (triangulação).
+
+**Viés de seleção (H1).** Modelo da probabilidade de ter CPIc válido, em todas as 47.818 empreitadas de 2019–2022 (42,6% com fecho):
+
+| Variável | Efeito na probabilidade de ter fecho | IC de 95% |
+| --- | --- | --- |
+| Concurso público (vs. ajuste direto) | −6,7 p.p. | −13,4 a +0,1 |
+| Ano 2020 (vs. 2019) | +6,1 p.p. | 1,6 a 10,6 |
+| Ano 2021 (vs. 2019) | +7,9 p.p. | 2,8 a 12,9 |
+| Preço contratual 10 vezes maior | −0,5 p.p. | −5,1 a 4,2 |
+
+Há seleção moderada: os concursos registam o fecho um pouco menos, e o registo melhora ao longo dos anos; o porte não influencia. Como a variação pela base de modificações, que não depende do fecho, confirma os dois efeitos, a seleção pode afetar as magnitudes, mas não cria os resultados. Ressalva: o registo das modificações também melhorou com os anos, o que pode inflar o efeito de 2021 nessa medida.
+
+**Gate da Fase 3: cumprido em 01/11/2026.** Os resultados são robustos às duas versões do indicador de custo e às demais variações. Fica pendente a auditoria manual da data de fecho.
+
+## 11. Plano de estudo técnico (após o projeto)
+
+Ao fim do projeto, estudar de forma técnica todos os conceitos usados, partindo do arquivo onde cada um aparece. Esta lista é atualizada a cada fase; no fim, vira um plano de estudo com exercícios e referências.
+
+| Área | Conceito | Onde aparece no projeto |
+| --- | --- | --- |
+| Gestão de projetos | EVM: PV, EV, AC, CPI, SPI | Seção 3.1 do roteiro |
+| Gestão de projetos | Earned Schedule e o problema do SPI monetário | Seção 3.2; decisão D5 |
+| Gestão de projetos | Adaptação de índices a contratos encerrados; desenho em intervalo | Seção 4.3; decisão D7 |
+| Dados | Qualidade de dados: completude, conteúdo, erros de registo, valores sentinela (zero = não informado) | Diário da Fase 0; decisões D2, D4, D12, D13 |
+| Dados | Pipeline reprodutível: dados brutos, intermediários e processados; flags em vez de apagar linhas | `src/converter.py`, `src/transform.py` |
+| Dados | Formatos de arquivo (xlsx, xls, parquet) e engines de leitura | `converter.py`; leitura do índice do INE |
+| Dados | Deflação e encadeamento de séries de índices | `transform.py`; decisão D10 |
+| Dados | Censura de dados e viés de seleção | Diário da Fase 0 (série 2017–2023); notebook 06 |
+| Ferramentas | Ambientes virtuais (venv), `requirements.txt` | Configuração do projeto |
+| Ferramentas | Git: add, commit, amend, push, `.gitignore`, estados dos arquivos | Todo o projeto |
+| SQL | Modelagem dimensional: esquema em estrela, fatos e dimensões, chaves primárias e estrangeiras, índices | `sql/schema.sql`, `src/load.py` |
+| SQL | SELECT, WHERE, ORDER BY, LIMIT, NULL, expressões, divisão inteira | Lições 1 e 2 (notebook 03) |
+| SQL | Agregações, GROUP BY, HAVING | Lições 2 e 3; consultas 02 e 03 |
+| SQL | JOIN e o risco de duplicação; regra de ouro do GROUP BY | Lição 3 |
+| SQL | CASE WHEN, IN, COALESCE (exercícios pendentes) | Consultas 04 a 07 |
+| SQL | CTEs (WITH) e funções de janela (ROW\_NUMBER, COUNT OVER); mediana em SQL (exercícios pendentes) | Consulta 08 |
+| Estatística | Média × mediana; assimetria; sensibilidade a extremos | Consultas 07 e 08; decisão D11 |
+| Estatística | Intervalo de confiança para proporções (método de Wilson) | Notebook 04 |
+| Estatística | Teste qui-quadrado e V de Cramér; significância × tamanho do efeito | Notebook 05 |
+| Estatística | Teste de Mann-Whitney e probabilidade de superioridade | Notebook 05 |
+| Estatística | Correlação de Spearman | Notebook 05 |
+| Estatística | Regressão logística: chances, razão de chances, variáveis categóricas e categorias de referência, transformação logarítmica | Notebook 05 |
+| Estatística | Erros-padrão agrupados (cluster) | Notebooks 05 e 06 |
+| Estatística | Efeitos marginais médios | Notebooks 05 e 06 |
+| Estatística | Diagnóstico: pseudo-R², AIC, AUC, VIF | Notebook 05 |
+| Estatística | Confusão (confounding) e controle de variáveis; modelos em camadas | Consulta 05; notebook 05 |
+| Estatística | Comparações múltiplas | Notebook 05 (distritos) |
+| Estatística | Robustez, triangulação e modelo de seleção | Notebook 06 |
+| Visualização | Título como achado; barras de erro; paleta acessível; rótulos diretos | Notebooks 04 a 06 |
 
 ## Referências
 

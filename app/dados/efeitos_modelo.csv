@@ -1,0 +1,36 @@
+Unnamed: 0,efeito (p.p.),"IC 2,5%","IC 97,5%"
+procedimento: Concurso público,8.5,4.1,12.9
+procedimento: Consulta prévia,-0.5,-3.1,2.1
+procedimento: Outros,18.6,2.0,35.2
+cpv: 450,-7.6,-12.3,-2.9
+cpv: 451,-2.0,-6.0,2.0
+cpv: 453,2.4,-2.3,7.1
+cpv: 454,-3.6,-8.0,0.7
+cpv: outros,-29.1,-43.0,-15.2
+distrito: Aveiro,1.3,-9.0,11.5
+distrito: Beja,14.3,2.0,26.7
+distrito: Braga,-7.4,-15.8,0.9
+distrito: Braganca,-7.3,-19.1,4.6
+distrito: Coimbra,7.4,-3.5,18.3
+distrito: Faro,2.5,-9.1,14.2
+distrito: Guarda,2.2,-11.9,16.2
+distrito: Leiria,-1.9,-17.1,13.4
+distrito: Portalegre,-6.0,-18.2,6.1
+distrito: Porto,3.9,-5.6,13.5
+distrito: Região Autónoma da Madeira,-14.1,-30.5,2.3
+distrito: Região Autónoma dos Açores,-4.3,-13.6,4.9
+distrito: Santarém,10.6,0.9,20.2
+distrito: Setúbal,1.5,-8.1,11.1
+distrito: Viana do Castelo,0.1,-14.4,14.7
+distrito: Vila Real,2.3,-8.6,13.1
+distrito: Viseu,5.3,-4.7,15.2
+distrito: outros,4.4,-3.3,12.1
+ano: 2020,4.8,2.0,7.5
+ano: 2021,16.9,12.8,20.9
+ano: 2022,13.1,9.3,16.9
+concorrencia: 2 a 3,-1.7,-4.3,0.8
+concorrencia: 4 a 5,-0.8,-4.1,2.6
+concorrencia: 6 ou mais,-2.6,-6.4,1.1
+concorrencia: não informado,-4.4,-8.1,-0.8
+log_preco,16.7,13.0,20.4
+log_prazo,8.3,4.4,12.2
