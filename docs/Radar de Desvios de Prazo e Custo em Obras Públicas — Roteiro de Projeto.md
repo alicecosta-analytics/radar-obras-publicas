@@ -32,7 +32,7 @@ Os relatórios oficiais descrevem o volume agregado dos desvios, mas não respon
 
 - **Acadêmica:** aplica índices de EVM, normalmente usados no controle de um projeto em andamento, a uma população de contratos encerrados — um uso de portfólio, não de projeto.
 - **Prática:** gera evidência sobre onde concentrar o controle (tipo de procedimento, porte, entidade), útil a donos de obra e órgãos de fiscalização.
-- **Profissional:** demonstra, num único projeto público e verificável, competências de PMO (EVM, governança, lições aprendidas) e de dados (pipeline, SQL, estatística, visualização), voltado ao mercado português.
+- **Profissional:** demonstra, num único projeto público e verificável, a cadeia completa de ciência de dados com ênfase em estatística: qualidade de dados, pipeline, SQL, inferência, modelagem, validação e visualização, aplicada a um domínio real (o desempenho de contratos públicos).
 
 ## 2. Objetivos
 
@@ -655,6 +655,35 @@ Há seleção moderada: os concursos registam o fecho um pouco menos, e o regist
 
 **Gate da Fase 3: cumprido em 01/11/2026.** Os resultados são robustos às duas versões do indicador de custo e às demais variações. Fica pendente a auditoria manual da data de fecho.
 
+## Diário da Fase 4
+
+### 01/11/2026 — Painel interativo publicado
+
+**Painel:** [radar-obras-publicas.streamlit.app](https://radar-obras-publicas.streamlit.app), em Streamlit, publicado de graça no Streamlit Community Cloud a partir do repositório público.
+
+- **Dados:** `src/exportar_painel.py` gera `app/dados/painel.parquet` (empreitadas de 2018 a 2023, só as colunas do painel) e copia as tabelas do modelo e da robustez. Estes arquivos vão para o GitHub, porque o painel publicado precisa deles.
+- **Conteúdo:** filtros por ano, procedimento, faixa de preço, tipo de obra e distrito; cinco abas (visão geral, comparar grupos, prazo, o que explica o estouro, método e limitações); tabela dos maiores estouros com link para cada contrato no Portal Base.
+- **Validação:** os números do painel batem com os da análise (20.379 contratos com índice de custo, 29,1% com estouro, 56,6% no preço contratado). Estouro mediano, quando há estouro: 6,5%.
+- **Atualização:** cada `git push` republica o painel. O plano gratuito suspende o app após dias sem uso; ele volta com um clique.
+
+**Preparação da publicação:**
+
+- Nome de usuário do GitHub trocado para um nome profissional, `alicecosta-analytics`; endereço do repositório atualizado no Git e no painel.
+- Verificado que nem a versão atual nem o histórico do repositório contêm o nome do empregador (caminhos de arquivos guardados nas saídas dos notebooks).
+- Repositório tornado público.
+
+**Pendências da Fase 4**
+
+- [x] Completar o perfil do GitHub (nome, bio, foto, localização, LinkedIn) e criar o README de perfil.
+- [x] Esconder o e-mail nos commits (endereço noreply do GitHub; bloqueio de pushes que exponham o e-mail). Os commits anteriores mantêm o e-mail pessoal.
+- [x] Pôr o link do painel, a descrição e os tópicos no repositório; fixar o projeto no perfil.
+- [x] README do repositório, com posicionamento de ciência de dados.
+- [x] Licença MIT e `.gitattributes` (notebooks fora da contagem de linguagens).
+- [ ] Post no LinkedIn: versão técnica e curta, mencionando a pós em Ciência de Dados (ênfase em Estatística) da UFMG; publicar na terça, 03/11, pela manhã, com os links no primeiro comentário.
+- [ ] Auditoria manual da data de fecho (cerca de 20 contratos), usando os links do painel.
+
+**Posicionamento (decisão de 01/11/2026):** todas as publicações apresentam o projeto como ciência de dados com ênfase em estatística. A Gestão do Valor Agregado entra como conhecimento do domínio analisado, não como área de atuação. GitHub: `alicecosta-analytics`.
+
 ## 11. Plano de estudo técnico (após o projeto)
 
 Ao fim do projeto, estudar de forma técnica todos os conceitos usados, partindo do arquivo onde cada um aparece. Esta lista é atualizada a cada fase; no fim, vira um plano de estudo com exercícios e referências.
@@ -690,6 +719,15 @@ Ao fim do projeto, estudar de forma técnica todos os conceitos usados, partindo
 | Estatística | Comparações múltiplas | Notebook 05 (distritos) |
 | Estatística | Robustez, triangulação e modelo de seleção | Notebook 06 |
 | Visualização | Título como achado; barras de erro; paleta acessível; rótulos diretos | Notebooks 04 a 06 |
+
+**Acréscimos da Fase 4**
+
+| Área | Conceito | Onde aparece no projeto |
+| --- | --- | --- |
+| Ferramentas | Streamlit: estrutura de um app, widgets de filtro, abas, cache de dados (`st.cache_data`) | `app/app.py` |
+| Visualização | Gráficos declarativos com Altair: camadas, codificações, tooltips | `app/app.py` |
+| Ferramentas | Publicação de apps (Streamlit Community Cloud), dependências por app | `app/requirements.txt`, `.streamlit/config.toml` |
+| Ferramentas | Git: repositório remoto (`git remote`), repositório público, histórico e dados sensíveis | Preparação da publicação |
 
 ## Referências
 
